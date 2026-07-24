@@ -111,7 +111,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
         identityVotes: identityRes.votes,
         loaded: true,
       });
-    } catch(error) {
+    } catch (error) {
+      console.error('[loadData] Failed to load data from API:', error);
       set({ loaded: true });
     }
   },

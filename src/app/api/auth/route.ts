@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 const SECRET = process.env.AUTH_SECRET || 'lifeos-personal-app-secret-key-2024';
 
 function hashPassword(password: string): string {
@@ -23,7 +25,6 @@ function verifySignedToken(token: string, passwordHash: string): boolean {
     const expectedSig = crypto.createHmac('sha256', SECRET).update(`${storedHash}:${timestamp}`).digest('hex');
     if (signature !== expectedSig) return false;
     if (storedHash !== passwordHash) return false;
-    // Token expires after 30 days
     const tokenAge = Date.now() - parseInt(timestamp);
     if (tokenAge > 30 * 24 * 60 * 60 * 1000) return false;
     return true;
@@ -33,31 +34,47 @@ function verifySignedToken(token: string, passwordHash: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const { password } = await req.json();
+  try {
+    const { password } = await req.json();
 
-  if (!password) {
-    return NextResponse.json({ error: 'Password required' }, { status: 400 });
-  }
+    if (!password) {
+      return NextResponse.json({ error: 'Password required' }, { status: 400 });
+    }
 
-  let settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+    let settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
 
-  // First time: no password set yet
-  if (!settings?.password) {
+    if (!settings?.password) {
+      const hashedPassword = hashPassword(password);
+      settings = await prisma.settings.upsert({
+        where: { id: 'singleton' },
+        update: { password: hashedPassword },
+        create: {
+          id: 'singleton',
+          password: hashedPassword,
+          identityValues: JSON.stringify(['انضباط', 'پشتکار', 'شجاعت', 'رشد', 'تمرکز']),
+          gymDays: '[]',
+          gymPlan: '[]',
+        },
+      });
+
+      const token = createSignedToken(hashedPassword);
+      const response = NextResponse.json({ success: true, isFirstTime: true });
+      response.cookies.set('auth-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      return response;
+    }
+
     const hashedPassword = hashPassword(password);
-    settings = await prisma.settings.upsert({
-      where: { id: 'singleton' },
-      update: { password: hashedPassword },
-      create: {
-        id: 'singleton',
-        password: hashedPassword,
-        identityValues: JSON.stringify(['انضباط', 'پشتکار', 'شجاعت', 'رشد', 'تمرکز']),
-        gymDays: '[]',
-        gymPlan: '[]',
-      },
-    });
+    if (hashedPassword !== settings.password) {
+      return NextResponse.json({ error: 'رمز عبور اشتباه است' }, { status: 401 });
+    }
 
     const token = createSignedToken(hashedPassword);
-    const response = NextResponse.json({ success: true, isFirstTime: true });
+    const response = NextResponse.json({ success: true, isFirstTime: false });
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -65,23 +82,10 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
     return response;
+  } catch (error) {
+    console.error('[POST /api/auth]', error);
+    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
   }
-
-  // Verify password
-  const hashedPassword = hashPassword(password);
-  if (hashedPassword !== settings.password) {
-    return NextResponse.json({ error: 'رمز عبور اشتباه است' }, { status: 401 });
-  }
-
-  const token = createSignedToken(hashedPassword);
-  const response = NextResponse.json({ success: true, isFirstTime: false });
-  response.cookies.set('auth-token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30,
-  });
-  return response;
 }
 
 export async function DELETE() {
@@ -91,21 +95,25 @@ export async function DELETE() {
 }
 
 export async function GET(req: NextRequest) {
-  const token = req.cookies.get('auth-token')?.value;
+  try {
+    const token = req.cookies.get('auth-token')?.value;
 
-  if (!token) {
-    return NextResponse.json({ authenticated: false }, { status: 401 });
+    if (!token) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
+
+    const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+    if (!settings?.password) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
+
+    if (!verifySignedToken(token, settings.password)) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
+
+    return NextResponse.json({ authenticated: true });
+  } catch (error) {
+    console.error('[GET /api/auth]', error);
+    return NextResponse.json({ error: 'Auth check failed' }, { status: 500 });
   }
-
-  // Get password hash to verify the signed token
-  const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
-  if (!settings?.password) {
-    return NextResponse.json({ authenticated: false }, { status: 401 });
-  }
-
-  if (!verifySignedToken(token, settings.password)) {
-    return NextResponse.json({ authenticated: false }, { status: 401 });
-  }
-
-  return NextResponse.json({ authenticated: true });
 }
