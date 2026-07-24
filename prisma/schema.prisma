@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  title           String
+  completed       Boolean  @default(false)
+  priority        String   @default("medium") // high, medium, low
+  estimatedMinutes Int     @default(30)
+  category        String?
+  date            String   // YYYY-MM-DD
+  goalId          String?  // link to Goal.id
+  createdAt       DateTime @default(now())
+
+  @@index([date])
+  @@index([goalId])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  timeframe   String   @default("1year") // 1year, 3years, 5years
+  progress    Int      @default(0)
+  deadline    String   // YYYY-MM-DD
+  createdAt   DateTime @default(now())
+
+  @@index([timeframe])
+}
+
+model LearningEntry {
+  id       String   @id @default(cuid())
+  category String   // backend, frontend, english, books
+  title    String
+  hours    Float
+  date     String   // YYYY-MM-DD
+  notes    String?
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([category])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  date      String   // YYYY-MM-DD
+  mood      String   // great, good, neutral, bad, terrible
+  energy    String   // high, medium, low
+  notes     String
+  lessons   String
+  gratitude String
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+model DailyStat {
+  date             String   @id // YYYY-MM-DD
+  tasksCompleted   Int      @default(0)
+  totalTasks       Int      @default(0)
+  studyHours       Float    @default(0)
+  gymSession       Boolean  @default(false)
+  journalWritten   Boolean  @default(false)
+  mood             String?
+  score            Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  @@index([date])
+}
+
+model IdentityVote {
+  id        String   @id @default(cuid())
+  date      String   // YYYY-MM-DD
+  action    String
+  category  String
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([category])
+}
+
+model Settings {
+  id              String   @id @default("singleton")
+  theme           String   @default("dark")
+  dailyReminder   Boolean  @default(true)
+  reminderTime    String   @default("06:00")
+  identityValues  String   @default("[]") // JSON array stored as string
+  gymDays         String   @default("[]") // JSON array of weekday numbers [0-6]
+  gymPlan         String   @default("[]") // JSON array of exercises
+  password        String?  // Hashed password for login
+  updatedAt       DateTime @updatedAt
+}

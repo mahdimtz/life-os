@@ -1,0 +1,22 @@
+{
+  "name": "LifeOS - سیستم‌عامل زندگی",
+  "short_name": "LifeOS",
+  "description": "مدیریت اهداف، وظایف و یادگیری روزانه",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait-primary",
+  "lang": "fa",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle"],
+  "prefer_related_applications": false
+}

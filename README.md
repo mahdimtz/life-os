@@ -1,36 +1,437 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LifeOS — سیستم‌عامل زندگی
 
-## Getting Started
+> هویتت رو بساز، یه رأی در یک زمان.
 
-First, run the development server:
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![Prisma](https://img.shields.io/badge/Prisma-7-2D3748)
+![SQLite](https://img.shields.io/badge/SQLite-3-003B57)
+![PWA](https://img.shields.io/badge/PWA-✅-5A0FC8)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## فهرست مطالب
+
+- [درباره پروژه](#درباره-پروژه)
+- [امکانات](#امکانات)
+- [آموزش عملکرد برنامه](#آموزش-عملکرد-برنامه)
+- [نصب و راه‌اندازی](#نصب-و-راه‌اندازی)
+- [ساختار پروژه](#ساختار-پروژه)
+- [تکنولوژی‌ها](#تکنولوژی‌ها)
+- [API ها](#api-ها)
+- [نصب به صورت PWA](#نصب-به-صورت-pwa)
+- [رهنمای توسعه](#رهنمای-توسعه)
+
+---
+
+## درباره پروژه
+
+**LifeOS** یک اپلیکیشن مدیریت زندگی شخصیه که بهت کمک می‌کنه:
+
+- **اهداف بلندمدتت** رو دنبال کنی (۱ ساله، ۳ ساله، ۵ ساله)
+- **وظایف روزانه‌ت** رو مدیریت کنی
+- **ساعت یادگیری** رو در دسته‌بندی‌های مختلف ثبت کنی
+- **ژورنال روزانه** بنویسی (احساس، انرژی، درس‌ها، قدردانی)
+- **آمار و نمودارهای** پیشرفتت رو ببینی
+- **هویتت** رو با رأی دادن به ارزش‌هات بسازی
+- در لحظات سخت از **پروتکل‌های روانشناختی** استفاده کنی
+
+این پروژه یه اپ **فول‌استک** هست که با **Next.js 16** ساخته شده و از **Prisma** با **SQLite** برای ذخیره‌سازی داده‌ها استفاده می‌کنه.
+
+---
+
+## امکانات
+
+### داشبورد
+- خوش‌آمدگویی بر اساس ساعت روز
+- کارت‌های آماری (روزهای متوالی، امتیاز امروز، امتیاز هویت، وظایف)
+- مأموریت اصلی روز (اولویت‌بندی خودکار)
+- لیست وظایف با تیک زدن
+- نمودار هفتگی
+- دکمه‌های رأی هویت سریع
+
+### وظایف امروز
+- اضافه کردن وظیفه جدید
+- فیلتر بر اساس اولویت (بالا/متوسط/پایین)
+- مرتب‌سازی بر اساس اولویت
+- نوار پیشرفت
+- حذف وظیفه
+
+### اهداف
+- سه بازه زمانی: ۱ ساله، ۳ ساله، ۵ ساله
+- نوار پیشرفت قابل ویرایش
+- مهلت و تعداد روزهای باقی‌مانده
+- مودال ایجاد هدف جدید
+- آمار کلی (تعداد، میانگین پیشرفت، تکمیل شده)
+
+### یادگیری
+- چهار دسته‌بندی: بک‌اند، فرانت‌اند، انگلیسی، کتاب
+- ثبت ساعت مطالعه با عنوان و یادداشت
+- نمودار توزیع ساعت
+- خلاصه و آمار هر دسته
+
+### ژورنال
+- انتخاب حس (عالی، خوب، معمولی، بد، خیلی بد)
+- سطح انرژی (زیاد، متوسط، کم)
+- یادداشت، درس‌های آموخته، قدردانی
+- مشاهده و ویرایش ورودی‌های قبلی
+
+### مرکز عملیات
+- ۶ پروتکل روانشناختی: خستگی، وسوسه، غم، اضطراب، شکست، شروع دوباره
+- برنامه اضطراری و چک‌لیست ریکاوری برای هر پروتکل
+- مثال‌های واقعی
+
+### آمار
+- نمودار تکمیل وظایف هفتگی
+- روند ساعت مطالعه
+- توزیع احساسات
+- یادگیری بر اساس دسته
+- امتیاز روزانه ۷ روز اخیر
+
+### تنظیمات
+- تم تاریک/روشن/سیستم
+- یادآوری روزانه
+- مدیریت ارزش‌های هویتی
+- دانلود و پاک کردن داده‌ها
+- بارگذاری داده نمونه
+
+---
+
+## آموزش عملکرد برنامه
+
+### ۱. معماری کلی
+
+```
+┌─────────────────────────────────────────────────┐
+│                   مرورگر کاربر                    │
+│  ┌─────────────┐  ┌──────────────────────────┐  │
+│  │   رابط کاربر │  │   Service Worker (PWA)    │  │
+│  │   (React)    │  │   کش کردن صفحات          │  │
+│  └──────┬───────┘  └──────────────────────────┘  │
+│         │                                        │
+│         ▼                                        │
+│  ┌─────────────┐                                 │
+│  │   Zustand    │  ← مدیریت state در سمت کلاینت  │
+│  │   Store      │                                │
+│  └──────┬───────┘                                │
+└─────────┼────────────────────────────────────────┘
+          │ fetch() به API
+          ▼
+┌─────────────────────────────────────────────────┐
+│              سرور Next.js                        │
+│  ┌─────────────────────────────────────────┐    │
+│  │           API Routes (/api/*)            │    │
+│  │   /api/tasks    → CRUD وظایف             │    │
+│  │   /api/goals    → CRUD اهداف             │    │
+│  │   /api/learning → CRUD یادگیری           │    │
+│  │   /api/journal  → CRUD ژورنال            │    │
+│  │   /api/stats    → آمار روزانه            │    │
+│  │   /api/identity → رأی هویت              │    │
+│  │   /api/settings → تنظیمات                │    │
+│  │   /api/data     → خروجی/پاک کردن/نمونه  │    │
+│  └──────────────────┬──────────────────────┘    │
+│                     │                           │
+│                     ▼                           │
+│  ┌─────────────────────────────────────────┐    │
+│  │              Prisma ORM                  │    │
+│  │         تبدیل کد به SQL                  │    │
+│  └──────────────────┬──────────────────────┘    │
+│                     │                           │
+│                     ▼                           │
+│  ┌─────────────────────────────────────────┐    │
+│  │           SQLite Database                │    │
+│  │         prisma/dev.db                    │    │
+│  └─────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ۲. جریان داده‌ها
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+وقتی اپ رو باز می‌کنی:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **`layout.tsx`** رندر میشه و `loadData()` رو صدا میزنه
+2. `loadData()` همزمان **۷ درخواست API** رو به سرور میفرسته
+3. سرور از **Prisma** برای خواندن از **SQLite** استفاده می‌کنه
+4. داده‌ها به **Zustand store** برگردانده میشن
+5. کامپوننت‌ها از store داده می‌گیرن و رندر میشن
 
-## Learn More
+وقتی کاری انجام میدی (مثلاً تیک زدن یه وظیفه):
 
-To learn more about Next.js, take a look at the following resources:
+1. کامپوننت متد store رو صدا میزنه (مثلاً `toggleTask`)
+2. store یه درخواست **PATCH** به API میفرسته
+3. API با **Prisma** دیتابیس رو آپدیت می‌کنه
+4. **آمار روزانه** هم خودکار آپدیت میشه
+5. store state محلی رو آپدیت می‌کنه
+6. رابط کاربر رفرش میشه
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### ۳. دیتابیس
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+دیتابیس **SQLite** هست و ۷ جدول داره:
 
-## Deploy on Vercel
+| جدول | توضیح |
+|------|-------|
+| `Task` | وظایف روزانه |
+| `Goal` | اهداف بلندمدت |
+| `LearningEntry` | ثبت یادگیری |
+| `JournalEntry` | ورودی‌های ژورنال |
+| `DailyStat` | آمار روزانه |
+| `IdentityVote` | رأی‌های هویت |
+| `Settings` | تنظیمات (تک رکوردی) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### ۴. سیستم هویت
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ایده اصلی: **هر عملی که با ارزش‌هات هم‌خوانی داشته باشه یه رأیه.**
+
+- ۵ ارزش پیش‌فرض: انضباط، پشتکار، شجاعت، رشد، تمرکز
+- هر رأی = ۱ امتیاز
+- پنجره ۳۰ روزه: فقط رأی‌های ۳۰ روز اخیر شمرده میشه
+- حداکثر امتیاز: ۱۰۰٪
+
+### ۵. سیستم امتیاز روزانه
+
+امتیاز هر روز بر اساس درصد تکمیل وظایف محاسبه میشه:
+
+```
+امتیاز = (تعداد وظایف انجام شده / کل وظایف) × ۱۰۰
+```
+
+روزهایی که امتیاز ≥ ۵۰ باشه، روز متوالی حساب میشه.
+
+---
+
+## نصب و راه‌اندازی
+
+### پیش‌نیازها
+
+- Node.js 18+
+- npm یا yarn
+
+### مراحل نصب
+
+```bash
+# ۱. کلون کردن پروژه
+git clone <repo-url>
+cd life-os
+
+# ۲. نصب وابستگی‌ها
+npm install
+
+# ۳. ساخت دیتابیس و اعمال migration
+npx prisma migrate dev
+
+# ۴. (اختیاری) بارگذاری داده نمونه
+curl -X POST http://localhost:3000/api/data/seed
+
+# ۵. اجرای پروژه
+npm run dev
+```
+
+حالا می‌تونی اپ رو در `http://localhost:3000` ببینی.
+
+---
+
+## ساختار پروژه
+
+```
+life-os/
+├── prisma/
+│   ├── schema.prisma        # Schema دیتابیس
+│   ├── dev.db               # فایل SQLite
+│   └── migrations/          # Migration‌ها
+│
+├── public/
+│   ├── manifest.json        # فایل PWA
+│   ├── sw.js                # Service Worker
+│   └── icon.svg             # آیکون اپ
+│
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx       # لایوت اصلی
+│   │   ├── page.tsx         # داشبورد (/)
+│   │   ├── globals.css      # استایل‌های سراسری
+│   │   │
+│   │   ├── api/             # API Routes
+│   │   │   ├── tasks/       # CRUD وظایف
+│   │   │   ├── goals/       # CRUD اهداف
+│   │   │   ├── learning/    # CRUD یادگیری
+│   │   │   ├── journal/     # CRUD ژورنال
+│   │   │   ├── stats/       # آمار
+│   │   │   ├── identity/    # رأی هویت
+│   │   │   ├── settings/    # تنظیمات
+│   │   │   └── data/        # خروجی/پاک کردن/نمونه
+│   │   │
+│   │   ├── today/           # صفحه وظایف امروز
+│   │   ├── goals/           # صفحه اهداف
+│   │   ├── learning/        # صفحه یادگیری
+│   │   ├── journal/         # صفحه ژورنال
+│   │   ├── operations/      # صفحه پروتکل‌ها
+│   │   ├── statistics/      # صفحه آمار
+│   │   └── settings/        # صفحه تنظیمات
+│   │
+│   ├── components/
+│   │   ├── layout/
+│   │   │   └── SideBar/     # سایدبار دسکتاپ + موبایل
+│   │   ├── ui/              # کامپوننت‌های UI
+│   │   └── PWAScript.tsx    # ثبت Service Worker
+│   │
+│   ├── lib/
+│   │   ├── prisma.ts        # Prisma Client singleton
+│   │   └── api.ts           # کلاینت API
+│   │
+│   ├── store/
+│   │   └── useAppStore.ts   # Zustand store
+│   │
+│   └── types/
+│       └── index.ts         # تایپ‌های TypeScript
+│
+├── .env                     # متغیرهای محیطی
+├── next.config.ts           # تنظیمات Next.js
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## تکنولوژی‌ها
+
+| لایه | تکنولوژی | نسخه |
+|------|----------|------|
+| فریمورک | Next.js (App Router) | 16.2.11 |
+| UI | React | 19.2.4 |
+| زبان | TypeScript | 5+ |
+| استایل | Tailwind CSS | 4+ |
+| ORM | Prisma | 7+ |
+| دیتابیس | SQLite | 3+ |
+| State | Zustand | 5+ |
+| نمودار | Recharts | 3+ |
+| آیکون | Lucide React | 1+ |
+| PWA | Service Worker + Manifest | - |
+
+---
+
+## API ها
+
+### وظایف
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/tasks?date=YYYY-MM-DD` | لیست وظایف |
+| POST | `/api/tasks` | ایجاد وظیفه |
+| PATCH | `/api/tasks/:id/toggle` | تغییر وضعیت |
+| DELETE | `/api/tasks/:id` | حذف |
+
+### اهداف
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/goals` | لیست اهداف |
+| POST | `/api/goals` | ایجاد هدف |
+| PATCH | `/api/goals/:id` | بروزرسانی پیشرفت |
+| DELETE | `/api/goals/:id` | حذف |
+
+### یادگیری
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/learning` | لیست ثبت‌ها |
+| POST | `/api/learning` | ایجاد ثبت |
+| DELETE | `/api/learning/:id` | حذف |
+
+### ژورنال
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/journal` | لیست ورودی‌ها |
+| POST | `/api/journal` | ایجاد ورودی |
+| PATCH | `/api/journal/:id` | ویرایش ورودی |
+
+### آمار
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/stats` | لیست آمار |
+| POST | `/api/stats` | ایجاد/بروزرسانی |
+
+### هویت
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/identity` | لیست رأی‌ها |
+| POST | `/api/identity` | رأی دادن |
+
+### تنظیمات
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/settings` | دریافت تنظیمات |
+| PATCH | `/api/settings` | بروزرسانی |
+
+### داده‌ها
+| متد | آدرس | توضیح |
+|-----|------|-------|
+| GET | `/api/data/export` | دانلود JSON |
+| DELETE | `/api/data/reset` | پاک کردن همه |
+| POST | `/api/data/seed` | بارگذاری نمونه |
+
+---
+
+## نصب به صورت PWA
+
+اپلیکیشن از **PWA** پشتیبانی می‌کنه و می‌تونی اون رو مثل یه اپ روی موبایل یا دسکتاپ نصب کنی.
+
+### موبایل (Android)
+1. اپ رو در Chrome باز کن
+2. روی سه‌نقطه منو بزن
+3. گزینه **"Install app"** یا **"افزودن به صفحه اصلی"** رو انتخاب کن
+
+### موبایل (iOS)
+1. اپ رو در Safari باز کن
+2. روی دکمه Share بزن
+3. گزینه **"Add to Home Screen"** رو انتخاب کن
+
+### دسکتاپ
+1. اپ رو در Chrome/Edge باز کن
+2. از آدرس‌بار روی آیکون نصب بزن
+3. یا از منو گزینه **"Install"** رو انتخاب کن
+
+**ویژگی‌های PWA:**
+- نصب روی صفحه اصلی
+- کش صفحات برای استفاده آفلاین
+- بدون نوار مرورگر (حالت standalone)
+- آیکون اختصاصی
+
+---
+
+## رهنمای توسعه
+
+### اضافه کردن صفحه جدید
+1. فایل `src/app/my-page/page.tsx` بساز
+2. آیکون مورد نظر رو از `lucide-react` اضافه کن
+3. در آرایه `navItems` در `SideBar.tsx` اضافه کن
+4. API route مربوطه رو در `src/app/api/` بساز
+
+### تغییر دیتابیس
+1. Schema رو در `prisma/schema.prisma` تغییر بده
+2. `npx prisma migrate dev --name my-change` اجرا کن
+3. API routes رو آپدیت کن
+
+### استایل‌دهی
+- از Tailwind CSS استفاده کن
+- متغیرهای رنگ در `globals.css` تعریف شدن
+- تم تاریک و روشن پشتیبانی میشه
+
+### دستورات مفید
+```bash
+npm run dev          # اجرای development
+npm run build        # ساخت نسخه production
+npm run start        # اجرای production
+npm run lint         # بررسی کد
+
+npx prisma studio    # مشاهده دیتابیس در مرورگر
+npx prisma migrate dev  # اعمال تغییرات schema
+npx prisma generate     # تولید مجدد کلاینت
+```
+
+---
+
+## لایسنس
+
+MIT License
+
+---
+
+> **«کار این نیست که چیزی رو ببینی که هرگز دیده نشده، بلکه اینه که درباره چیزی که هر روز می‌بینیم، چیزی فکر کنیم که هرگز فکر نکردیم.»**
+> — اروین شرودینگر
