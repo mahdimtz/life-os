@@ -24,6 +24,7 @@ import {
   Check,
   LogOut,
 } from 'lucide-react';
+import { NotificationPermissionButton } from '@/components/PWAScript';
 
 const THEMES = [
   { value: 'dark' as const, label: 'تاریک', icon: Moon, description: 'راحت برای چشم' },
@@ -187,17 +188,22 @@ export default function SettingsPage() {
           </div>
 
           {settings.dailyReminder && (
-            <div className="flex items-center gap-3 pl-0 sm:pl-4">
-              <Clock className="w-4 h-4 text-muted" />
-              <Input
-                type="time"
-                value={settings.reminderTime}
-                onChange={(e) =>
-                  updateSettings({ reminderTime: e.target.value })
-                }
-                className="w-32"
-              />
-              <span className="text-xs text-muted">ساعت یادآوری</span>
+            <div className="space-y-3 pl-0 sm:pl-4">
+              <div className="flex items-center gap-3">
+                <Clock className="w-4 h-4 text-muted" />
+                <Input
+                  type="time"
+                  value={settings.reminderTime}
+                  onChange={(e) =>
+                    updateSettings({ reminderTime: e.target.value })
+                  }
+                  className="w-32"
+                />
+                <span className="text-xs text-muted">ساعت یادآوری</span>
+              </div>
+              <div className="pl-7">
+                <NotificationPermissionButton />
+              </div>
             </div>
           )}
         </div>

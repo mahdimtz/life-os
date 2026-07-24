@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/SideBar/SideBar';
 import { useAppStore } from '@/store/useAppStore';
 import { NotificationScheduler } from '@/components/PWAScript';
+import { NotificationToastContainer } from '@/components/NotificationToast';
 import { Loader2 } from 'lucide-react';
 
 const PUBLIC_PATHS = ['/login', '/api'];
@@ -74,6 +75,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     return (
       <>
         <NotificationScheduler />
+        <NotificationToastContainer />
         {children}
       </>
     );
@@ -83,6 +85,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <>
       <NotificationScheduler />
+      <NotificationToastContainer />
       <div className="flex min-h-screen">
         <Sidebar />
         <main className="flex-1 lg:mr-64 pt-14 lg:pt-0 pb-20 lg:pb-0 p-4 lg:p-8 overflow-y-auto min-h-screen">
