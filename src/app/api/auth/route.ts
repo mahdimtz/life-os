@@ -2,16 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 
+const SECRET = process.env.AUTH_SECRET || 'lifeos-personal-app-secret-key-2024';
+
 function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-function createToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+function createSignedToken(passwordHash: string): string {
+  const payload = `${passwordHash}:${Date.now()}`;
+  const signature = crypto.createHmac('sha256', SECRET).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${signature}`).toString('base64');
 }
 
-// Store valid tokens in memory (in production, use Redis or database)
-const validTokens = new Set<string>();
+function verifySignedToken(token: string, passwordHash: string): boolean {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const parts = decoded.split(':');
+    if (parts.length < 3) return false;
+    const [storedHash, timestamp, signature] = [parts[0], parts.slice(1, -1).join(':'), parts[parts.length - 1]];
+    const expectedSig = crypto.createHmac('sha256', SECRET).update(`${storedHash}:${timestamp}`).digest('hex');
+    if (signature !== expectedSig) return false;
+    if (storedHash !== passwordHash) return false;
+    // Token expires after 30 days
+    const tokenAge = Date.now() - parseInt(timestamp);
+    if (tokenAge > 30 * 24 * 60 * 60 * 1000) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json();
@@ -22,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   let settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
 
-  // If no password set, this is first time - set the password
+  // First time: no password set yet
   if (!settings?.password) {
     const hashedPassword = hashPassword(password);
     settings = await prisma.settings.upsert({
@@ -37,15 +56,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const token = createToken();
-    validTokens.add(token);
-
+    const token = createSignedToken(hashedPassword);
     const response = NextResponse.json({ success: true, isFirstTime: true });
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: 60 * 60 * 24 * 30,
     });
     return response;
   }
@@ -53,18 +70,16 @@ export async function POST(req: NextRequest) {
   // Verify password
   const hashedPassword = hashPassword(password);
   if (hashedPassword !== settings.password) {
-    return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+    return NextResponse.json({ error: 'رمز عبور اشتباه است' }, { status: 401 });
   }
 
-  const token = createToken();
-  validTokens.add(token);
-
+  const token = createSignedToken(hashedPassword);
   const response = NextResponse.json({ success: true, isFirstTime: false });
   response.cookies.set('auth-token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
   });
   return response;
 }
@@ -78,11 +93,19 @@ export async function DELETE() {
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;
 
-  if (!token || !validTokens.has(token)) {
+  if (!token) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+
+  // Get password hash to verify the signed token
+  const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+  if (!settings?.password) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+
+  if (!verifySignedToken(token, settings.password)) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
   return NextResponse.json({ authenticated: true });
 }
-
-export { validTokens };
